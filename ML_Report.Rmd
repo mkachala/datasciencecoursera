@@ -1,0 +1,109 @@
+# Recognition of Unilateral Dumbbell Biceps Curl Class using Random Forest
+
+## Outline
+1. Introduction
+2. Data source
+3. Data reduction
+4. Preprocessing
+5. Model description
+6. Cross-validation
+7. References
+8. R-code
+
+## 1. Introduction
+The aim of this project is a development of a predictive model for recognition of Unilateral Dumbbell Biceps Curl Class based on the data provided by Human Activity Recognition Project [1]. The data analysis project is done for the Coursera Practical Machine Learning course [2].
+
+## 2. Data source
+The training and testing data sets were obtained here:  
+Training: https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv  
+Testing: https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv  
+
+## 3. Data reduction  
+Data reduction were performed in three consecutive steps.  
+1. The data for cases with new_window = "yes" were deleted as they make only 3% of all observations and are not included in testing data set.  
+2. Variables that were collected only in new_window = "yes" observations were deleted (e.g. "kurtosis_roll_belt").  
+3. For further data processing only data that are directly relates to movements was used, so we got rid of usernames, time stamps and window-related vars. All other variables are numerical.  
+
+## 4. Preprocessing
+As first preprocessing step the provided training data were divided into train and test sets using ` createDataPartition` command
+```
+inTrain <- createDataPartition(y=harDataClean$classe,
+                               p=0.7, list=FALSE)
+training <- harDataClean[inTrain,]
+testing <- harDataClean[-inTrain,]
+```
+Then to check if the variables are correlated we calculated correlation matrix and discovered that some of them are accually correlated. To overcome this issue we performed PCA preprocessing in the following manner:  
+```
+preProcTraining = preProcess(training,method = "pca",thresh=0.9)
+```
+The number of components needed to describe 90% of variance is equal to 18.
+
+## 5. Model description
+In the prediction model we use only data that are directly connected to the movements of the study subjects. This data was preprocessed using PCA and in the end we're dealing with 18 components. Then we used 10 repetions of random forest model fitting to obain prediction model. Random forest was chosen as the most accurate method.
+
+## 6. Cross-validation
+For cross-validation we used train and test sets derived from provided training set. The in sample error were estimated using train set and out of sample error - using test set.  
+
+Error  | Estimate
+------------- | -------------
+In sample  | 0.9%
+Out of sample | 4.3%
+The number of incorrect prediction in the provided testing set is 1 out of 20 (5%) and that corresponds to Out of sample error estimation.
+
+## 7. References
+[1] http://groupware.les.inf.puc-rio.br/har  
+[2] https://class.coursera.org/predmachlearn-003/
+
+## 8. R-code
+```
+library(ggplot2); library(caret)
+harData = read.csv("pml-training.csv", na.strings = "")
+
+%Function to detect variables used only in new_window = "yes" cases
+uncert = function(x){
+  na_det = table((is.na(x))|(x=="NA"))
+  ratio = as.numeric(na_det["TRUE"]/(na_det["TRUE"]+na_det["FALSE"]))
+  if (is.na(ratio) == T) {ratio = 0}
+  return(ratio)
+}
+uncer.table = sapply(harData,uncert)
+harDataClean = harData[,names(uncer.table[uncer.table < 0.5])]
+harDataClean = harDataClean[harDataClean$new_window == "no",]
+
+%Separation of train and test sets
+inTrain <- createDataPartition(y=harDataClean$classe,
+                               p=0.7, list=FALSE)
+training <- harDataClean[inTrain,]
+testing <- harDataClean[-inTrain,]
+
+%Correlation matrix
+corMat = as.matrix(cor(training))
+levelplot(corMat)
+
+%PCA
+preProcTraining = preProcess(training[,8:59],method = "pca",thresh=0.9)
+trainingPCA = predict(preProcTraining,training[,8:59])
+trainingPCA = cbind(training$classe,trainingPCA,deparse.level = 0)
+names(trainingPCA)[1] = "classe"
+
+%set number of repetions
+fitControl <- trainControl(number = 10)
+modFit <- train(classe ~ .,data=training,method="rf",prox=TRUE, trControl=fitControl)
+
+%In of sample error
+pred <- predict(modFit,trainingPCA)
+table(pred==trainingPCA$classe)
+
+%predict test in (estimation of out of sample error)
+testingPCA = predict(preProcTraining,testing[,8:59])
+testingPCA = cbind(testing$classe,testingPCA,deparse.level = 0)
+names(testingPCA)[1] = "classe"
+pred <- predict(modFit,testingPCA)
+table(pred==testingPCA$classe)
+
+%predict test out
+testData = read.csv("pml-testing.csv", na.strings = "")
+testDataClean = testData[,names(training)[1:59]]
+testDataPCA = predict(preProcTraining,testDataClean[,8:59])
+pred <- predict(modFit,testDataPCA)
+```
