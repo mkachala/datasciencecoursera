@@ -35,13 +35,15 @@ preProcTraining = preProcess(training,method = "pca",thresh=0.9)
 The number of components needed to describe 90% of variance is equal to 18.
 5. Model description
 
-In the prediction model we use only data that are directly connected to the movements of the study subjects. This data were preprocessed using PCA and in the end we’re dealing with 18 components. Then we used 10 repetions of random forest model fitting to obain prediction model. Random forest was chosen as most accurate method.
+In the prediction model we use only data that are directly connected to the movements of the study subjects. This data was preprocessed using PCA and in the end we’re dealing with 18 components. Then we used 10 repetions of random forest model fitting to obain prediction model. Random forest was chosen as the most accurate method.
 6. Cross-validation
 
 For cross-validation we used train and test sets derived from provided training set. The in sample error were estimated using train set and out of sample error - using test set.
 Error   Estimate    
 In sample   0.9%  
 Out of sample   4.3%   
+
+The number of incorrect prediction in the provided testing set is 1 out of 20 (5%) and that corresponds to Out of sample error estimation.
 7. References
 
 [1] {http://groupware.les.inf.puc-rio.br/har}
