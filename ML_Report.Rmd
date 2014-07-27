@@ -48,6 +48,7 @@ Error  | Estimate
 ------------- | -------------
 In sample  | 0.9%
 Out of sample | 4.3%
+
 The number of incorrect prediction in the provided testing set is 1 out of 20 (5%) and that corresponds to Out of sample error estimation.
 
 ## 7. References
