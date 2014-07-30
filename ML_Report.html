@@ -1,101 +1,282 @@
-.main-container { max-width: 940px; margin-left: auto; margin-right: auto; }  
-Recognition of Unilateral Dumbbell Biceps Curl Class using Random Forest
-Outline
-  1. Introduction 
-  2. Data source 
-  3. Data reduction 
-  4. Preprocessing 
-  5. Model description 
-  6. Cross-validation 
-  7. References 
-  8. R-code 
-1. Introduction
 
-The aim of this project is a development of a predictive model for recognition of Unilateral Dumbbell Biceps Curl Class based on the data provided by Human Activity Recognition Project [1]. The data analysis project is done for the Coursera Practical Machine Learning course [2].
-2. Data source
+<!DOCTYPE html>
+<!-- saved from url=(0014)about:internet -->
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
 
-The training and testing data sets were obtained here:
-Training: {https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv}
-Testing: {https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv}
-3. Data reduction
+<title>Recognition of Unilateral Dumbbell Biceps Curl Class using Random Forest</title>
 
-Data reduction were performed in three consecutive steps.
-1. The data for cases with new_window = “yes” were deleted as they make only 3% of all observations and are not included in testing data set.
-2. Variables that were collected only in new_window = “yes” observations were deleted (e.g. “kurtosis_roll_belt”).
-3. For further data processing only data that are directly relates to movements was used, so we got rid of usernames, time stamps and window-related vars. All other variables are numerical.
-4. Preprocessing
+<style type="text/css">
+body, td {
+   font-family: sans-serif;
+   background-color: white;
+   font-size: 12px;
+   margin: 8px;
+}
 
-As first preprocessing step the provided training data were divided into train and test sets using createDataPartition command
-inTrain <- createDataPartition(y=harDataClean$classe,
+tt, code, pre {
+   font-family: 'DejaVu Sans Mono', 'Droid Sans Mono', 'Lucida Console', Consolas, Monaco, monospace;
+}
+
+h1 { 
+   font-size:2.2em; 
+}
+
+h2 { 
+   font-size:1.8em; 
+}
+
+h3 { 
+   font-size:1.4em; 
+}
+
+h4 { 
+   font-size:1.0em; 
+}
+
+h5 { 
+   font-size:0.9em; 
+}
+
+h6 { 
+   font-size:0.8em; 
+}
+
+a:visited {
+   color: rgb(50%, 0%, 50%);
+}
+
+pre {	
+   margin-top: 0;
+   max-width: 95%;
+   border: 1px solid #ccc;
+   white-space: pre-wrap;
+}
+
+pre code {
+   display: block; padding: 0.5em;
+}
+
+code.r, code.cpp {
+   background-color: #F8F8F8;
+}
+
+table, td, th {
+  border: none;
+}
+
+blockquote {
+   color:#666666;
+   margin:0;
+   padding-left: 1em;
+   border-left: 0.5em #EEE solid;
+}
+
+hr {
+   height: 0px;
+   border-bottom: none;
+   border-top-width: thin;
+   border-top-style: dotted;
+   border-top-color: #999999;
+}
+
+@media print {
+   * { 
+      background: transparent !important; 
+      color: black !important; 
+      filter:none !important; 
+      -ms-filter: none !important; 
+   }
+
+   body { 
+      font-size:12pt; 
+      max-width:100%; 
+   }
+       
+   a, a:visited { 
+      text-decoration: underline; 
+   }
+
+   hr { 
+      visibility: hidden;
+      page-break-before: always;
+   }
+
+   pre, blockquote { 
+      padding-right: 1em; 
+      page-break-inside: avoid; 
+   }
+
+   tr, img { 
+      page-break-inside: avoid; 
+   }
+
+   img { 
+      max-width: 100% !important; 
+   }
+
+   @page :left { 
+      margin: 15mm 20mm 15mm 10mm; 
+   }
+     
+   @page :right { 
+      margin: 15mm 10mm 15mm 20mm; 
+   }
+
+   p, h2, h3 { 
+      orphans: 3; widows: 3; 
+   }
+
+   h2, h3 { 
+      page-break-after: avoid; 
+   }
+}
+
+</style>
+
+
+
+
+
+</head>
+
+<body>
+<h1>Recognition of Unilateral Dumbbell Biceps Curl Class using Random Forest</h1>
+
+<h2>Outline</h2>
+
+<ol>
+<li>Introduction</li>
+<li>Data source</li>
+<li>Data reduction</li>
+<li>Preprocessing</li>
+<li>Model description</li>
+<li>Cross-validation</li>
+<li>References</li>
+<li>R-code</li>
+</ol>
+
+<h2>1. Introduction</h2>
+
+<p>The aim of this project is a development of a predictive model for recognition of Unilateral Dumbbell Biceps Curl Class based on the data provided by Human Activity Recognition Project [1]. The data analysis project is done for the Coursera Practical Machine Learning course [2].</p>
+
+<h2>2. Data source</h2>
+
+<p>The training and testing data sets were obtained here:<br/>
+Training: <a href="https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv">https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv</a><br/>
+Testing: <a href="https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv">https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv</a>  </p>
+
+<h2>3. Data reduction</h2>
+
+<p>Data reduction were performed in three consecutive steps.<br/>
+1. The data for cases with new_window = &ldquo;yes&rdquo; were deleted as they make only 3% of all observations and are not included in testing data set.<br/>
+2. Variables that were collected only in new_window = &ldquo;yes&rdquo; observations were deleted (e.g. &ldquo;kurtosis_roll_belt&rdquo;).<br/>
+3. For further data processing only data that are directly relates to movements was used, so we got rid of usernames, time stamps and window-related vars. All other variables are numerical.  </p>
+
+<h2>4. Preprocessing</h2>
+
+<p>As first preprocessing step the provided training data were divided into train and test sets using <code>createDataPartition</code> command</p>
+
+<pre><code>inTrain &lt;- createDataPartition(y=harDataClean$classe,
                                p=0.7, list=FALSE)
-training <- harDataClean[inTrain,]
-testing <- harDataClean[-inTrain,]
-Then to check if the variables are correlated we calculated correlation matrix and discovered that some of them are accually correlated. To overcome this issue we performed PCA preprocessing in the following manner:
-preProcTraining = preProcess(training,method = "pca",thresh=0.9)
-The number of components needed to describe 90% of variance is equal to 18.
-5. Model description
+training &lt;- harDataClean[inTrain,]
+testing &lt;- harDataClean[-inTrain,]
+</code></pre>
 
-In the prediction model we use only data that are directly connected to the movements of the study subjects. This data was preprocessed using PCA and in the end we’re dealing with 18 components. Then we used 10 repetions of random forest model fitting to obain prediction model. Random forest was chosen as the most accurate method.
-6. Cross-validation
+<p>Then to check if the variables are correlated we calculated correlation matrix and discovered that some of them are accually correlated. To overcome this issue we performed PCA preprocessing in the following manner:  </p>
 
-For cross-validation we used train and test sets derived from provided training set. The in sample error were estimated using train set and out of sample error - using test set.
-Error   Estimate    
-In sample   0.9%  
-Out of sample   4.3%   
+<pre><code>preProcTraining = preProcess(training,method = &quot;pca&quot;,thresh=0.9)
+</code></pre>
 
-The number of incorrect prediction in the provided testing set is 1 out of 20 (5%) and that corresponds to Out of sample error estimation.
-7. References
+<p>The number of components needed to describe 90% of variance is equal to 18.</p>
 
-[1] {http://groupware.les.inf.puc-rio.br/har}
-[2] {https://class.coursera.org/predmachlearn-003/}
-8. R-code
-library(ggplot2); library(caret)
-harData = read.csv("pml-training.csv", na.strings = "")
+<h2>5. Model description</h2>
 
-%Function to detect variables used only in new_window = "yes" cases
+<p>In the prediction model we use only data that are directly connected to the movements of the study subjects. This data was preprocessed using PCA and in the end we&#39;re dealing with 18 components. Then we used 10 repetions of random forest model fitting to obain prediction model. Random forest was chosen as the most accurate method.</p>
+
+<h2>6. Cross-validation</h2>
+
+<p>For cross-validation we used train and test sets derived from provided training set. The in sample error were estimated using train set and out of sample error - using test set.  </p>
+
+<table><thead>
+<tr>
+<th>Error</th>
+<th>Estimate</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>In sample</td>
+<td>0.9%</td>
+</tr>
+<tr>
+<td>Out of sample</td>
+<td>4.3%</td>
+</tr>
+</tbody></table>
+
+<p>The number of incorrect prediction in the provided testing set is 1 out of 20 (5%) and that corresponds to Out of sample error estimation.</p>
+
+<h2>7. References</h2>
+
+<p>[1] <a href="http://groupware.les.inf.puc-rio.br/har">http://groupware.les.inf.puc-rio.br/har</a><br/>
+[2] <a href="https://class.coursera.org/predmachlearn-003/">https://class.coursera.org/predmachlearn-003/</a></p>
+
+<h2>8. R-code</h2>
+
+<pre><code>library(ggplot2); library(caret)
+harData = read.csv(&quot;pml-training.csv&quot;, na.strings = &quot;&quot;)
+
+%Function to detect variables used only in new_window = &quot;yes&quot; cases
 uncert = function(x){
-  na_det = table((is.na(x))|(x=="NA"))
-  ratio = as.numeric(na_det["TRUE"]/(na_det["TRUE"]+na_det["FALSE"]))
+  na_det = table((is.na(x))|(x==&quot;NA&quot;))
+  ratio = as.numeric(na_det[&quot;TRUE&quot;]/(na_det[&quot;TRUE&quot;]+na_det[&quot;FALSE&quot;]))
   if (is.na(ratio) == T) {ratio = 0}
   return(ratio)
 }
 uncer.table = sapply(harData,uncert)
-harDataClean = harData[,names(uncer.table[uncer.table < 0.5])]
-harDataClean = harDataClean[harDataClean$new_window == "no",]
+harDataClean = harData[,names(uncer.table[uncer.table &lt; 0.5])]
+harDataClean = harDataClean[harDataClean$new_window == &quot;no&quot;,]
 
 %Separation of train and test sets
-inTrain <- createDataPartition(y=harDataClean$classe,
+inTrain &lt;- createDataPartition(y=harDataClean$classe,
                                p=0.7, list=FALSE)
-training <- harDataClean[inTrain,]
-testing <- harDataClean[-inTrain,]
+training &lt;- harDataClean[inTrain,]
+testing &lt;- harDataClean[-inTrain,]
 
 %Correlation matrix
 corMat = as.matrix(cor(training))
 levelplot(corMat)
 
 %PCA
-preProcTraining = preProcess(training[,8:59],method = "pca",thresh=0.9)
+preProcTraining = preProcess(training[,8:59],method = &quot;pca&quot;,thresh=0.9)
 trainingPCA = predict(preProcTraining,training[,8:59])
 trainingPCA = cbind(training$classe,trainingPCA,deparse.level = 0)
-names(trainingPCA)[1] = "classe"
+names(trainingPCA)[1] = &quot;classe&quot;
 
 %set number of repetions
-fitControl <- trainControl(number = 10)
-modFit <- train(classe ~ .,data=training,method="rf",prox=TRUE, trControl=fitControl)
+fitControl &lt;- trainControl(number = 10)
+modFit &lt;- train(classe ~ .,data=training,method=&quot;rf&quot;,prox=TRUE, trControl=fitControl)
 
 %In of sample error
-pred <- predict(modFit,trainingPCA)
+pred &lt;- predict(modFit,trainingPCA)
 table(pred==trainingPCA$classe)
 
 %predict test in (estimation of out of sample error)
 testingPCA = predict(preProcTraining,testing[,8:59])
 testingPCA = cbind(testing$classe,testingPCA,deparse.level = 0)
-names(testingPCA)[1] = "classe"
-pred <- predict(modFit,testingPCA)
+names(testingPCA)[1] = &quot;classe&quot;
+pred &lt;- predict(modFit,testingPCA)
 table(pred==testingPCA$classe)
 
 %predict test out
-testData = read.csv("pml-testing.csv", na.strings = "")
+testData = read.csv(&quot;pml-testing.csv&quot;, na.strings = &quot;&quot;)
 testDataClean = testData[,names(training)[1:59]]
 testDataPCA = predict(preProcTraining,testDataClean[,8:59])
-pred <- predict(modFit,testDataPCA)
+pred &lt;- predict(modFit,testDataPCA)
+</code></pre>
+
+</body>
+
+</html>
+
